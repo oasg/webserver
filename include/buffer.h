@@ -4,11 +4,6 @@
 #include<atomic>
 #include<string>
 
-struct iovec
-{
-    void* iov_base;
-    int iov_len;
-};
 
 class Buffer{
     public:

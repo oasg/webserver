@@ -53,6 +53,13 @@
         "stop_token": "cpp",
         "streambuf": "cpp",
         "typeinfo": "cpp",
+<<<<<<< HEAD
         "cinttypes": "cpp"
+=======
+        "cinttypes": "cpp",
+        "map": "cpp",
+        "cfenv": "cpp",
+        "set": "cpp"
+>>>>>>> 994470e (Add log component)
     }
 }
