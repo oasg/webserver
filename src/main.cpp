@@ -1,6 +1,5 @@
 #include<iostream>
-#include "test.cpp"
 int main(){
-    TestLog();
+    std::cout<< "Hello, from webserver!\n"<<std::endl;
     return 0;
 }

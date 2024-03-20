@@ -3,6 +3,12 @@
 #include <sys/stat.h>
 #include <cassert>
 #include <cstdarg>
+#include <iostream>
+Log::Log(){
+    lineCount = 0;
+    toDay = 0;
+    isAsync_ = false;
+}
 
 void Log::init(log_level level, const char *path, const char *suffix, int max_queue_capacity)
 {
@@ -10,6 +16,7 @@ void Log::init(log_level level, const char *path, const char *suffix, int max_qu
     path_ = path;
     suffix_ = suffix;
     lineCount = 0;
+    
     if(max_queue_capacity>1){
         isAsync_ = true;
         log_queue_ = std::make_unique<BlockQueue<std::string>>(max_queue_capacity);  
@@ -37,12 +44,17 @@ void Log::init(log_level level, const char *path, const char *suffix, int max_qu
         }
         assert(fp_ != nullptr);
     }
+    is_open_ = true;
 
 }
 Log *Log::getInst()
 {
     static Log log;
     return &log;
+}
+void Log::DoFlashLog_()
+{
+    Log::getInst()->AsyncWrite_();
 }
 void Log::write(log_level level, const char *format, ...)
 {
@@ -71,11 +83,12 @@ void Log::write(log_level level, const char *format, ...)
         fp_ = fopen(newFilename, "a");  //re create a file and open
         assert(fp_ != nullptr);
     }
+
     {
         std::unique_lock<std::mutex> locker(mtx_);
         lineCount++;
         int32_t pos = ftell(fp_);
-        int n = snprintf(buff_.BeginWrite(),128,"[%d-%02d-%02d %02d:%02d:%02d.%06ld]",
+        int n = snprintf(buff_.BeginWrite(),128,"%d-%02d-%02d %02d:%02d:%02d.%06ld ",
             t.tm_year + 1900,
             t.tm_mon + 1,
             t.tm_mday,
@@ -88,16 +101,28 @@ void Log::write(log_level level, const char *format, ...)
         va_start(vaList,format);
         int m = vsnprintf(buff_.BeginWrite(),buff_.WritableBytes(),format,vaList);
         va_end(vaList);
+
         buff_.HasWritten(m);
         buff_.Append("\n\0",2);  //next line
+        
         if(isAsync_ && !log_queue_->full()){
             log_queue_->push_back(buff_.RetrieveAllToStr());
         }else{
+            std::cout<<buff_.Peek()<<std::endl;
             fputs(buff_.Peek(),fp_);
         }
         buff_.RetrieveAll(); //clear buffer
     }
 }
+
+void Log::flush()
+{
+    if(isAsync_){
+        log_queue_->flush();
+    }
+    fflush(fp_);
+}
+
 
 log_level Log::GetLevel()
 {
@@ -109,6 +134,11 @@ void Log::SetLevel(log_level level)
 {
     std::lock_guard<std::mutex> locker(mtx_);
     level_ = level;
+}
+
+bool Log::IsOpen()
+{
+    return is_open_;
 }
 
 Log::~Log()
@@ -131,26 +161,23 @@ void Log::AppendLogLevelTitle(log_level level)
     switch (level)
     {
     case 0:
-        buff_.Append("[debug]:", 9);
+        buff_.Append("[debug]: ", 9);
         break;
     case 1:
-        buff_.Append("[info]:", 8);
+        buff_.Append("[info] : ", 9);
         break;
     case 2:
-        buff_.Append("[warn]:", 8);
+        buff_.Append("[warn] : ", 9);
         break;
     case 3:
-        buff_.Append("[error]:", 9);
+        buff_.Append("[error]: ", 9);
         break;
     default:
-        buff_.Append("[info]:", 8);
+        buff_.Append("[info] : ", 9);
         break;
     }
 }
 
-void Log::DoFlashLog_()
-{
-}
 
 void Log::AsyncWrite_()
 {

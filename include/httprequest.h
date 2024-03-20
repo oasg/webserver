@@ -26,7 +26,7 @@ class HttpRequest{
         bool IsKeepAlive() const;
     private:
         bool _ParseRequestLine(const std::string & line );
-        void _ParseHeaders(const std::string & line);
+        void _ParseHeader(const std::string & line);
         void _ParseBody(const std::string & line);
 
         void _ParsePath();

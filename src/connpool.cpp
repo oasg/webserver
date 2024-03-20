@@ -19,7 +19,7 @@ SqlConnPool::SqlConnPool(const char *host, int port, const char *user, const cha
         mysql_set_character_set(conn,"utf8");
         _connQue.emplace(conn);
     }
-    maxConn = connSize;
+    _maxConn = connSize;
     sem_init(&semId_,0,connSize);
 }
 

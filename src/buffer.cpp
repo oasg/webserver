@@ -8,6 +8,21 @@ Buffer::Buffer(int bufsize):_buffer(bufsize), _rpos(0), _wpos(0)
 
 }
 
+size_t Buffer::WritableBytes() const
+{
+    return _buffer.size() - _wpos;
+}
+
+size_t Buffer::ReadableBytes() const
+{
+    return _wpos - _rpos;
+}
+
+size_t Buffer::PrependableBytes() const
+{
+    return _rpos;
+}
+
 void Buffer::Append(const std::string &str)
 {
     Append(str.c_str(), str.size());
@@ -64,6 +79,16 @@ ssize_t Buffer::WriteFd(int fd, int *saveErrno)
     }
     _rpos += len;
     return len;
+}
+
+char *Buffer::BeginPtr()
+{
+    return &_buffer[0];
+}
+
+const char *Buffer::BeginPtr() const
+{
+    return &_buffer[0];
 }
 
 void Buffer::MakeSpace(int len)
